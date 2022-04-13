@@ -9,7 +9,7 @@ Original file is located at
 
 # Run this line in Colab to install the package if it is
 # not already installed.
-!pip install git+https://github.com/openai/glide-text2im
+#!pip install git+https://github.com/openai/glide-text2im
 
 from PIL import Image
 from IPython.display import display
@@ -32,7 +32,8 @@ device = th.device('cpu' if not has_cuda else 'cuda')
 # Create base model.
 options = model_and_diffusion_defaults()
 options['use_fp16'] = has_cuda
-options['timestep_respacing'] = '100' # use 100 diffusion steps for fast sampling
+#options['timestep_respacing'] = '100' # use 100 diffusion steps for fast sampling
+options['timestep_respacing'] = '10' # use 100 diffusion steps for fast sampling
 model, diffusion = create_model_and_diffusion(**options)
 model.eval()
 if has_cuda:
@@ -53,14 +54,19 @@ model_up.to(device)
 model_up.load_state_dict(load_checkpoint('upsample', device))
 print('total upsampler parameters', sum(x.numel() for x in model_up.parameters()))
 
-def show_images(batch: th.Tensor):
+prompt = "a red rose"
+
+def show_images(batch: th.Tensor, save=True):
     """ Display a batch of images inline. """
     scaled = ((batch + 1)*127.5).round().clamp(0,255).to(th.uint8).cpu()
     reshaped = scaled.permute(2, 0, 3, 1).reshape([batch.shape[2], -1, 3])
     display(Image.fromarray(reshaped.numpy()))
+    if save:
+        im = Image.fromarray(reshaped.numpy())
+        im_name = prompt.replace(' ', '_')
+        im.save(f'{im_name}.png')
 
 # Sampling parameters
-prompt = "a painting by Ellsworth Kelly"
 batch_size = 1
 guidance_scale = 3.0
 
